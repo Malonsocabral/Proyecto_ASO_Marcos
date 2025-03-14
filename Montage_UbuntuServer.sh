@@ -7,7 +7,7 @@ azul='\033[0;34m'
 magenta='\033[0;35m'
 cyan='\033[0;36m'
 nc='\033[0m' # No Color
-
+TTL='$TTL'
 # Función de ayuda
 function help1 {
     echo
