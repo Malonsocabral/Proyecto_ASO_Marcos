@@ -1,3 +1,4 @@
+#!/bin/bash
 # Colores para los mensajes
 rojo='\033[0;31m'
 verde='\033[0;32m'
