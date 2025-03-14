@@ -1,3 +1,4 @@
+#!/bin/bash
 function help1 {
 echo
 echo "Bienvenido a las configuracion de ubuntuserver de Marcos"
