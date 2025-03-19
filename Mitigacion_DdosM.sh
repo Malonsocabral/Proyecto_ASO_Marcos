@@ -21,28 +21,33 @@ do
     # Separo el número de conexiones y la IP
     contador_conexiones=$(echo $ip_por_ip | awk '{print $1}')
     ip=$(echo $ip_por_ip | awk '{print $2}')
-
-    # Verifico si la IP ya está en la lista de bloqueados
-    if grep -q "$ip" $ips_bloqueadas
+    
+    if [ $contador_conexiones -gt $conexiones ]
     then
-        echo "La IP $ip ya está bloqueada, no hago nada."
-    else
-        # Si la IP supera el umbral, la bloqueo
-        if [ $contador_conexiones -gt $conexiones ]
-        then
-            echo "Bloqueando IP: $ip - Conexiones: $contador_conexiones"
+    # Recorro el archivo de IPs bloqueadas con un bucle for
+        for ip_bloqueada in $(cat $ips_bloqueadas)
+        do
+            if [ "$ip" = "$ip_bloqueada" ]
+            then
+                echo "La IP $ip ya está bloqueada, no hago nada."
+            else
+               # Si la IP supera el umbral, la bloqueo
+                echo "Bloqueando IP: $ip - Conexiones: $contador_conexiones"
             
-            # Agrego la IP a iptables para bloquear su tráfico
-            sudo iptables -A INPUT -s $ip -j DROP
+                # Agrego la IP a iptables para bloquear su tráfico
+                sudo iptables -A INPUT -s $ip -j DROP
 
-            # Guardo la IP en el archivo para recordar que ya fue bloqueada
-            echo "$ip" >> $ips_bloqueadas
-        fi
+                # Guardo la IP en el archivo para recordar que ya fue bloqueada
+                echo "$ip" >> $ips_bloqueadas
+            fi
+        done
+    else 
+         echo "La ip $ip no supera las $conexiones conexiones en este servidor"
+         echo ""
     fi
 done
 
 echo "Proceso de mitigación completado."
-wa
 
 crontab -e
 */5 * * * * /ruta/a/tu/script.sh
