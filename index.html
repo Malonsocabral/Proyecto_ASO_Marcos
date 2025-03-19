@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyecto ASO - Marcos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            text-align: left;
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+        }
+        h2 {
+            color: #FFD700;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        code {
+            background: #333;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Proyecto ASO - Marcos Alonso Cabral</h1>
+        <h2>Memoria Proyecto ASO</h2>
+        <p>Para comenzar, este proyecto trata de un script que localiza y elimina posibles IPs maliciosas, mitigando ataques DDoS de forma automatizada. Toda la información y guías estarán en un repositorio de GitHub.</p>
+        
+        <h2>1️⃣ Descripción de lo utilizado</h2>
+        <p><strong>🖥️ Ubuntu Server:</strong> Se usa la versión 22.04.5, configurada con DHCP y DNS mediante un script propio.</p>
+        <p><strong>🌐 Servidor Web Apache2:</strong> Se prueba la resistencia del servidor con tráfico HTTP masivo y se usa una página personalizada para verificar su estado.</p>
+        <p><strong>🔒 Script de Prevención en Bash:</strong> Identifica y bloquea IPs maliciosas, comparando su eficacia con otras soluciones existentes.</p>
+        <p><strong>💻 Kali Linux:</strong> Se emplea como máquina atacante para aprender técnicas de DDoS.</p>
+        <p><strong>📂 Repositorio en GitHub:</strong> Contiene scripts y configuraciones necesarias para la implementación del proyecto.</p>
+        
+        <h2>2️⃣ Instalación y Configuración</h2>
+        <p>El servidor se instala en una máquina virtual y se configura con:</p>
+        <ul>
+            <li>Script para configuración de <code>Netplan</code>, DHCP y DNS.</li>
+            <li>Instalación de Apache2: <code>sudo apt install apache2</code></li>
+            <li>Descarga del script de mitigación de DDoS:</li>
+            <code>wget https://raw.githubusercontent.com/Malonsocabral/Proyecto_ASO_Marcos/main/Mitigación_DdosM.sh</code>
+        </ul>
+        
+        <h2>3️⃣ Instalación de Herramientas en Kali Linux</h2>
+        <p>Se descargan y configuran herramientas de prueba de carga:</p>
+        <ul>
+            <li>Apache Benchmark (`ab`)</li>
+            <li>Hping3 (simulación de ataques DDoS)</li>
+        </ul>
+
+        <h2>4️⃣ Simulación de un Ataque DDoS</h2>
+        <p>Se realizarán pruebas con tráfico intenso para verificar la estabilidad del servidor y la efectividad del script de mitigación.</p>
+
+        <h2>5️⃣ Comparación con Otras Soluciones</h2>
+        <ul>
+            <li><strong>Fail2ban:</strong> Bloquea IPs sospechosas basado en logs.</li>
+            <li><strong>CrowdSec:</strong> Similar a Fail2ban pero con inteligencia colectiva.</li>
+            <li><strong>DDoS Deflate:</strong> Bloquea conexiones excesivas automáticamente.</li>
+            <li><strong>ModSecurity:</strong> Firewall para aplicaciones web.</li>
+        </ul>
+
+        <h2>6️⃣ Posibles Mejoras</h2>
+        <ul>
+            <li>Integración con Fail2ban.</li>
+            <li>Análisis avanzado con Wireshark o Suricata.</li>
+            <li>Uso de Cloudflare como protección adicional.</li>
+            <li>Automatización de bloqueos con `iptables`.</li>
+        </ul>
+
+        <p>📌 <strong>Repositorio del proyecto:</strong> <a href="https://github.com/Malonsocabral/Proyecto_ASO_Marcos" target="_blank">GitHub Proyecto ASO</a></p>
+    </div>
+
+    <div class="footer">
+        Proyecto realizado por Marcos Alonso Cabral - ASIR2
+    </div>
+</body>
+</html>
