@@ -19,7 +19,7 @@ enviar_correo() {
     rango=$2
     asunto="IP o Rango Bloqueado"
     mensaje="Se ha bloqueado la IP: $ip y el rango: $rango en el servidor."
-    sudo apt install mailutils -y &> /dev/null # Instalo la herramienta para mandar emails sino esta intalada
+    #sudo apt install mailutils -y &> /dev/null # Instalo la herramienta para mandar emails sino esta intalada
     echo "$mensaje" | mail -s "$asunto" $correo_destinatario
 }
 
@@ -44,8 +44,11 @@ bloquear_ip() {
 
     echo "Bloqueando rango de IPs: $rango_ip.0/24"
     sudo iptables -A INPUT -s "$rango_ip.0/24" -j DROP
+    # Debido a un error mencionado en el apartado de errores de la memoria implemento el siguiente codigo
+    if [ "$rango_ip.0/24" != ".0/24" ]
+    then
     echo "$rango_ip.0/24" >> "$ips_bloqueadas"
-
+    fi
     # Llamo a la funcion para enviar correo electrónico
     enviar_correo "$ip" "$rango_ip.0/24"
 }
