@@ -14,12 +14,13 @@ touch "$ips_bloqueadas"
 
 # Este es la función para enviar un correo electrónico a mi correo personal
 enviar_correo() {
+    correo_destinatario=$(grep "root=" /etc/ssmtp/ssmtp.conf | cut -d'=' -f2) # Aqui entro en el fichero de configuracion del email para sacar el correo
     ip=$1
     rango=$2
     asunto="IP o Rango Bloqueado"
     mensaje="Se ha bloqueado la IP: $ip y el rango: $rango en el servidor."
     sudo apt install mailutils -y &> /dev/null # Instalo la herramienta para mandar emails sino esta intalada
-    echo "$mensaje" | mail -s "$asunto" malonsocabral@danielcastelao.org
+    echo "$mensaje" | mail -s "$asunto" $correo_destinatario
 }
 
 # Este es la función que usare para bloquear una IP y su rango
