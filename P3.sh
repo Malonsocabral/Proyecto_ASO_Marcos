@@ -18,6 +18,7 @@ enviar_correo() {
     rango=$2
     asunto="IP o Rango Bloqueado"
     mensaje="Se ha bloqueado la IP: $ip y el rango: $rango en el servidor."
+    sudo apt install mailutils -y &> /dev/null # Instalo la herramienta para mandar emails sino esta intalada
     echo "$mensaje" | mail -s "$asunto" malonsocabral@danielcastelao.org
 }
 
