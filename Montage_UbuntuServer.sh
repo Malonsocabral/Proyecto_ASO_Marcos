@@ -401,14 +401,22 @@ echo -e "$amarillo 14. Procedemos a crear y configurar las iptables del servidor
 sleep 2
 sudo touch /usr/bin/set_iptables.sh
 sudo chmod 777 /usr/bin/set_iptables.sh
-sudo echo "iptables -F
-iptables -t nat -F
-iptables -t nat -A POSTROUTING -o enp0s3 -s 192.168.0.0/24 -j MASQUERADE
-iptables -A FORWARD -i enp0s8 -o enp0s3 -s 192.168.0.0/24 -j ACCEPT
-iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -j ACCEPT
-" > /usr/bin/set_iptables.sh
+sudo echo "#!/bin/bash
 
-sudo /usr/bin/set_iptables.sh
+# Limpio todas las reglas de iptables y las de la tabla NAT
+iptables -F
+iptables -t nat -F
+
+# Enmascaro las IPs de la red 192.168.0.0/24 cuando salen por enp0s3 (como un router)
+iptables -t nat -A POSTROUTING -o enp0s3 -s 192.168.0.0/24 -j MASQUERADE
+
+# Permito que el tráfico de la red 192.168.0.0/24 pase de enp0s8 a enp0s3
+iptables -A FORWARD -i enp0s8 -o enp0s3 -s 192.168.0.0/24 -j ACCEPT
+
+# Permito que el tráfico ya establecido o relacionado vuelva de enp0s3 a enp0s8
+iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -j ACCEPT" > /usr/bin/set_iptables.sh
+
+sudo /usr/bin/set_iptables.sh #Ejecuto estas reglas que acabo de crear
 
 echo -e "$verde Y por ultimo hacemos restart del servidor DNS y DHCP para que funcionen correctamente. $nc"
 sudo service named restart
