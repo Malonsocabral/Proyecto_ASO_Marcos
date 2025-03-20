@@ -49,5 +49,5 @@ done
 
 echo "Proceso de mitigación completado."
 
-crontab -e
-*/5 * * * * /ruta/a/tu/script.sh
+#crontab -e
+#*/5 * * * * /script.sh
