@@ -7,7 +7,8 @@ then
 else
     echo "Ejecutando como sudo!"
 fi
-
+# Permito la ip 192.168.0.1 que es el server para poder hacer comprobaciones con TIME ya que al bloquear un rango se me bloquea la ip del server.
+sudo iptables -I INPUT -s "192.168.0.1" -j ACCEPT
 # Defino el número máximo de conexiones antes de considerar una IP sospechosa
 conexiones=100
 
