@@ -1,10 +1,20 @@
 #!/bin/bash
+# Verifico si el script se ejecutó con sudo
+if [ "$EUID" -ne 0 ]
+then
+    echo "Este script no se ejecuto con sudo. Por favor, ejecutalo como superusuario."
+    exit 1
+else
+    echo "Ejecutando como sudo!"
+fi
 
 # Defino el número máximo de conexiones antes de considerar una IP sospechosa
 conexiones=100
 
 # Este es el archivo de logs de Apache donde revisaré las conexiones
 logs="/var/log/apache2/access.log"
+# Este es el fichero que cree para las ip tables
+$f_iptables="/usr/bin/set_iptables.sh"
 
 # Este es el archivo donde guardo las IPs ya bloqueadas para evitar repetir bloqueos
 ips_bloqueadas="/var/log/ips_bloqueadas.log"
@@ -26,24 +36,30 @@ enviar_correo() {
 # Este es la función que usare para bloquear una IP y su rango
 bloquear_ip() {
     ip=$1
-    if [ -z "$ip" ]; then
+    if [ -z "$ip" ]
+    then
         echo "Error: IP no válida."
         return
     fi
-
+    # Bloqueamos la ip añadiendolo al final de nuestro fichero de ip tables y ejecutandolo.
     echo "Bloqueando IP: $ip"
-    sudo iptables -A INPUT -s "$ip" -j DROP
+    echo "#Bloqueando la ip: $ip
+    iptables -A INPUT -s "$ip" -j DROP" >> $f_iptables
+    sudo $f_iptables 
     echo "$ip" >> "$ips_bloqueadas"
 
     # Bloquear IPs en el mismo rango (primeros 3 octetos)
     rango_ip=$(echo "$ip" | cut -d '.' -f 1-3)
-    if [ -z "$rango_ip" ]; then
+    if [ -z "$rango_ip" ]
+    then
         echo "Error: No se pudo calcular el rango de IPs."
         return
     fi
-
+    # Bloqueamos el rango de ips añadiendolo al final de nuestro fichero de ip tables y ejecutandolo.
     echo "Bloqueando rango de IPs: $rango_ip.0/24"
-    sudo iptables -A INPUT -s "$rango_ip.0/24" -j DROP
+    echo "#Bloqueando el rango de ips: '$rango_ip.0/24'
+    iptables -A INPUT -s '$rango_ip.0/24' -j DROP" >> $f_iptables
+    sudo $f_iptables 
     # Debido a un error mencionado en el apartado de errores de la memoria implemento el siguiente codigo
     if [ "$rango_ip.0/24" != ".0/24" ]
     then
@@ -148,15 +164,43 @@ detectar_conexiones_excesivas
 # Obtengo la hora actual (solo los minutos) para asi cuando sea en punto, vaciar el fichero iptables y poner el que tiene mi script de Montage de Ubuntu, y tambien borrar las ip bloqueadas y rangos.
 minutos=$(date +%M)
 hora=$(date +%H)
+logs_antiguos_apache2=/var/log/apache2/logs-eliminados-access.log
+
 # Verificar si es la hora en punto (minutos == 00)
 if [ "$minutos" -eq "00" ]
 then
     echo "Son las $hora en PUNTO (.$minutos)"
     echo "Por lo tanto, procedemos a borrar las iptables de las ips y rangos añadidos"
-    echo "" > "$fichero"  # Esto vacía el fichero de ip tables
-    
-    echo "Fichero vaciado correctamente."
+    echo "Ademas borramos los logs de apache, cambiandolos a un fichero nuevo llamado '$logs_antiguos_apache2' "
+    echo "" > "$f_iptables"  # Esto vacía el fichero de ip tables
+
+    # Y a continuacion volvemos a poner el fichero inicial de ip tables 
+
+    sudo echo "#!/bin/bash
+
+# Limpio todas las reglas de iptables y las de la tabla NAT
+iptables -F
+iptables -t nat -F
+
+# Enmascaro las IPs de la red 192.168.0.0/24 cuando salen por enp0s3 (como un router)
+iptables -t nat -A POSTROUTING -o enp0s3 -s 192.168.0.0/24 -j MASQUERADE
+
+# Permito que el tráfico de la red 192.168.0.0/24 pase de enp0s8 a enp0s3
+iptables -A FORWARD -i enp0s8 -o enp0s3 -s 192.168.0.0/24 -j ACCEPT
+
+# Permito que el tráfico ya establecido o relacionado vuelva de enp0s3 a enp0s8
+iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -j ACCEPT" > /usr/bin/set_iptables.sh
+
+    sudo /usr/bin/set_iptables.sh #Ejecuto estas reglas que acabo de crear
+
+# A continuacion vacio tambien los logs de apache cambiandolos 
+    sudo cat "$logs" >> $logs_antiguos_apache2
+    sudo echo "" > $logs
+    echo "Ficheros Cambiados y eliminados correctamente."
+    echo
 else
-    echo "No es la hora en punto. El fichero no se vaciará."
+    echo
+    echo "Aun no es la hora en punto, por lo que no se vaciaran ni los logs de apache ni las iptables."
 fi
+echo
 echo "Proceso de mitigación completado."
