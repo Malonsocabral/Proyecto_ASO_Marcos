@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Verificar si el usuario tiene permisos de superusuario
-if [ "$EUID" -ne 0 ]; then
+if [ "$EUID" -ne 0 ]
+then
   echo "Por favor, ejecuta este script como superusuario (root)."
   exit 1
 fi
@@ -12,7 +13,8 @@ read -sp "Introduce tu contraseña de aplicación (o contraseña de Gmail): " pa
 echo ""
 
 # Verificar si se proporcionaron correo y contraseña
-if [ -z "$email" ] || [ -z "$password" ]; then
+if [ -z "$email" ] || [ -z "$password" ]
+then
   echo "Error: Debes proporcionar un correo electrónico y una contraseña."
   exit 1
 fi
@@ -42,11 +44,12 @@ echo "Enviando correo de prueba a $email..."
 echo "Este es un correo de prueba desde $(hostname)." | mail -s "Correo de prueba" "$email"
 
 # Verificar si el correo se envió correctamente
-if [ $? -eq 0 ]; then
+if [ $? -eq 0 
+then
   echo "Correo de prueba enviado correctamente a $email."
 else
   echo "Error: No se pudo enviar el correo de prueba. Revisa la configuración de ssmtp."
   exit 1
 fi
-
+echo
 echo "Configuración completada. Ahora puedes enviar correos desde este servidor."
