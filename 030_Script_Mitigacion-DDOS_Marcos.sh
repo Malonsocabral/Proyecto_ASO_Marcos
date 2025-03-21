@@ -121,7 +121,7 @@ detectar_conexiones_excesivas() {
     echo "Analizando conexiones excesivas..."
 
     # Extraigo las IPs del log de Apache, cuento cuántas veces aparecen y las ordeno de mayor a menor
-    ips=$(awk '{print $1}' "$logs" | sort | uniq -c | sort -nr)
+    ips=$(tr -d '\0' < "$logs" | awk '{print $1}' "$logs" | sort | uniq -c | sort -nr)
 
     # Recorro cada línea de la lista de IPs y sus conexiones
     while read -r ip_por_ip;
