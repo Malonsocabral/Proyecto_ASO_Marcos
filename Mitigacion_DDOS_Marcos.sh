@@ -118,7 +118,7 @@ detectar_conexiones_excesivas() {
     ips=$(awk '{print $1}' "$logs" | sort | uniq -c | sort -nr)
 
     # Recorro cada línea de la lista de IPs y sus conexiones
-    for ip_por_ip in ips
+    while read -r ip_por_ip;
     do
         # Separo el número de conexiones y la IP
         contador_conexiones=$(echo "$ip_por_ip" | awk '{print $1}')
@@ -156,7 +156,7 @@ detectar_conexiones_excesivas() {
                 echo "La IP $ip ya está bloqueada."
             fi
         fi
-    done
+    done <<< $ips
 }
 
 # Aqui acaban las funciones y empieza el codigo donde ejecuto las funciones de detección y baneo de ips
@@ -166,7 +166,8 @@ detectar_conexiones_excesivas
 # Obtengo la hora actual (solo los minutos) para asi cuando sea en punto, vaciar el fichero iptables y poner el que tiene mi script de Montage de Ubuntu, y tambien borrar las ip bloqueadas y rangos.
 minutos=$(date +%M)
 hora=$(date +%H)
-logs_antiguos_apache2=/var/log/apache2/logs-eliminados-access.log
+fecha_general=$(date +"%Y-%m-%d_%H-%M")
+logs_antiguos_apache2=/var/log/apache2/logs-eliminados-access.log.tar
 
 # Verificar si es la hora en punto (minutos == 00)
 if [ "$minutos" -eq "00" ]
@@ -194,10 +195,27 @@ iptables -A FORWARD -i enp0s8 -o enp0s3 -s 192.168.0.0/24 -j ACCEPT
 iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -j ACCEPT" > /usr/bin/set_iptables.sh
 
     sudo /usr/bin/set_iptables.sh #Ejecuto estas reglas que acabo de crear
+    
+    # logs="/var/log/apache2/access.log" Esta linea es para recordar la ruta
+    
+    # A continuacion vacio tambien los logs de apache cambiandolos a un comprimido.
+    sudo mv $logs "$logs-eliminados-$fecha_general" && touch $logs
+    tar -rf "$logs-eliminados-bckp.tar.gz" "$logs-eliminados-$fecha_general"
+    sudo rm "$logs-eliminados-$fecha_general"
+    echo "Se han añadido los logs al backup correctamente"
+    
+    # Obtener el tamaño del archivo comprimido en bytes
+    tamano=$(stat -c%s "$DIR_RESPALDO/$ARCHIVO_COMPRESO")
 
-# A continuacion vacio tambien los logs de apache cambiandolos 
-    sudo cat "$logs" >> $logs_antiguos_apache2
-    sudo echo "" > $logs
+    # Si el tamaño es mayor o igual a 1GB (1073741824 bytes), eliminarlo
+    if [ "$tamano" -ge 1073741824 ]
+    then
+        echo "El archivo comprimido '$logs-eliminados-bckp.tar.gz' ha superado 1GB."
+        echo "Eliminándolo..."
+        rm "$logs-eliminados-bckp.tar.gz"
+    fi
+
+
     echo "Ficheros Cambiados y eliminados correctamente."
     echo
 else
