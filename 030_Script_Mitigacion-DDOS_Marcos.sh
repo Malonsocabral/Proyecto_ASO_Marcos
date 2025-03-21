@@ -56,15 +56,20 @@ bloquear_ip() {
         echo "Error: No se pudo calcular el rango de IPs."
         return
     fi
-    # Bloqueamos el rango de ips añadiendolo al final de nuestro fichero de ip tables y ejecutandolo.
-    echo "Bloqueando rango de IPs: $rango_ip.0/24"
-    echo "#Bloqueando el rango de ips: '$rango_ip.0/24'
-    iptables -A INPUT -s '$rango_ip.0/24' -j DROP" >> $f_iptables
-    sudo $f_iptables 
-    # Debido a un error mencionado en el apartado de errores de la memoria implemento el siguiente codigo
-    if [ "$rango_ip.0/24" != ".0/24" ]
+    if [ "$rango_ip.0/24" != "192.168.0.0/24" ]
     then
-    echo "$rango_ip.0/24" >> "$ips_bloqueadas"
+        # Bloqueamos el rango de ips añadiendolo al final de nuestro fichero de ip tables y ejecutandolo.
+        echo "Bloqueando rango de IPs: $rango_ip.0/24"
+        echo "#Bloqueando el rango de ips: '$rango_ip.0/24'
+        iptables -A INPUT -s '$rango_ip.0/24' -j DROP" >> $f_iptables
+        sudo $f_iptables 
+        # Debido a un error mencionado en el apartado de errores de la memoria implemento el siguiente codigo
+        if [ "$rango_ip.0/24" != ".0/24" ]
+        then
+        echo "$rango_ip.0/24" >> "$ips_bloqueadas"
+        fi
+    else
+    echo "Como el rango de ips, es el $rango_ip.0/24 y engloba a este propio servidor, no sera bloqueado"
     fi
     # Llamo a la funcion para enviar correo electrónico
     enviar_correo "$ip" "$rango_ip.0/24"
