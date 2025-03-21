@@ -13,9 +13,9 @@ read -sp "Introduce tu contraseña de aplicación (o contraseña de Gmail): " pa
 echo ""
 
 # Verificar si se proporcionaron correo y contraseña
-if [ -z "$email" ] || [ -z "$password" ]
+if [ -z "$email" ]
 then
-  echo "Error: Debes proporcionar un correo electrónico y una contraseña."
+  echo "Error: Debes proporcionar un correo electrónico."
   exit 1
 fi
 
