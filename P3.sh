@@ -14,7 +14,7 @@ conexiones=100
 # Este es el archivo de logs de Apache donde revisaré las conexiones
 logs="/var/log/apache2/access.log"
 # Este es el fichero que cree para las ip tables
-$f_iptables="/usr/bin/set_iptables.sh"
+f_iptables="/usr/bin/set_iptables.sh"
 
 # Este es el archivo donde guardo las IPs ya bloqueadas para evitar repetir bloqueos
 ips_bloqueadas="/var/log/ips_bloqueadas.log"
