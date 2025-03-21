@@ -199,7 +199,7 @@ iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -j 
     # logs="/var/log/apache2/access.log" Esta linea es para recordar la ruta
     
     # A continuacion vacio tambien los logs de apache cambiandolos a un comprimido.
-    sudo mv $logs "$logs-eliminados-$fecha_general" && touch $logs
+    sudo mv $logs "$logs-eliminados-$fecha_general" && touch $logs && sudo chmod 644 $logs && sudo chown www-data:www-data $logs
     tar -rf "$logs-eliminados-bckp.tar.gz" "$logs-eliminados-$fecha_general"
     sudo rm "$logs-eliminados-$fecha_general"
     echo "Se han añadido los logs al backup correctamente"
