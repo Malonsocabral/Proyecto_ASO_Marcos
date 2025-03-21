@@ -125,11 +125,11 @@ detectar_conexiones_excesivas() {
         ip=$(echo "$ip_por_ip" | awk '{print $2}')
 
 #Antes de hacer la comparacion de conexiones, reviso si es un valor nulo, (si no hay logs de apache), si es nulo, paro el script ya que no hay logs.
-#if [ "$contador_conexiones" == "" ]
-#then
-#    echo "Error: No hay logs de apache, terminando el proceso de mitigacion ... "
-#    exit 2
-#fi
+if [ "$contador_conexiones" == "" ]
+then
+    echo "Error: No hay logs de apache, terminando el proceso de mitigacion ... "
+    exit 2
+fi
         # Si la IP supera el umbral de conexiones, la bloqueo
         if [ "$contador_conexiones" -gt "$conexiones" ]
         then
