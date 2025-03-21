@@ -102,7 +102,8 @@ detectar_conexiones_excesivas() {
     ips=$(awk '{print $1}' "$logs" | sort | uniq -c | sort -nr)
 
     # Recorro cada línea de la lista de IPs y sus conexiones
-    while read -r ip_por_ip; do
+    for ip_por_ip in ips
+    do
         # Separo el número de conexiones y la IP
         contador_conexiones=$(echo "$ip_por_ip" | awk '{print $1}')
         ip=$(echo "$ip_por_ip" | awk '{print $2}')
@@ -110,6 +111,11 @@ detectar_conexiones_excesivas() {
         # Si la IP supera el umbral de conexiones, la bloqueo
         if [ "$contador_conexiones" -gt "$conexiones" ]
         then
+            if [ $? -ne 0 ]
+            then
+                echo "Error: No hay ninguna ip en los logs de apache"
+                exit 1
+            fi
             # Variable para verificar si la IP ya está bloqueada
             ip_encontrada=0
 
@@ -132,11 +138,25 @@ detectar_conexiones_excesivas() {
                 echo "La IP $ip ya está bloqueada."
             fi
         fi
-    done <<< "$ips"
+    done
 }
 
 # Aqui acaban las funciones y empieza el codigo donde ejecuto las funciones de detección y baneo de ips
 detectar_patrones_maliciosos
 detectar_conexiones_excesivas
 
+# Obtengo la hora actual (solo los minutos) para asi cuando sea en punto, vaciar el fichero iptables y poner el que tiene mi script de Montage de Ubuntu, y tambien borrar las ip bloqueadas y rangos.
+minutos=$(date +%M)
+hora=$(date +%H)
+# Verificar si es la hora en punto (minutos == 00)
+if [ "$minutos" -eq "00" ]
+then
+    echo "Son las $hora en PUNTO (.$minutos)"
+    echo "Por lo tanto, procedemos a borrar las iptables de las ips y rangos añadidos"
+    echo "" > "$fichero"  # Esto vacía el fichero de ip tables
+    
+    echo "Fichero vaciado correctamente."
+else
+    echo "No es la hora en punto. El fichero no se vaciará."
+fi
 echo "Proceso de mitigación completado."
