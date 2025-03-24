@@ -23,7 +23,7 @@ ips_bloqueadas="/var/log/ips_bloqueadas.log"
 # Creo el archivo de IPs bloqueadas si no existe
 touch "$ips_bloqueadas"
 
-# Este es la función para enviar un correo electrónico a mi correo personal
+# Esta es la función para enviar un correo electrónico a mi correo personal
 enviar_correo() {
     correo_destinatario=$(grep "root=" /etc/ssmtp/ssmtp.conf | cut -d'=' -f2) # Aqui entro en el fichero de configuracion del email para sacar el correo
     ip=$1
@@ -34,7 +34,7 @@ enviar_correo() {
     echo "$mensaje" | mail -s "$asunto" $correo_destinatario
 }
 
-# Este es la función que usare para bloquear una IP y su rango
+# Esta es la función que usare para bloquear una IP y su rango 
 bloquear_ip() {
     ip=$1
     if [ -z "$ip" ]
@@ -42,28 +42,29 @@ bloquear_ip() {
         echo "Error: IP no válida."
         return
     fi
-    # Bloqueamos la ip añadiendolo al final de nuestro fichero de ip tables y ejecutandolo.
+    # Aqui bloqueo la ip añadiendolo al final de nuestro fichero de ip tables y ejecutandolo.
     echo "Bloqueando IP: $ip"
     echo "#Bloqueando la ip: $ip
     iptables -A INPUT -s "$ip" -j DROP" >> $f_iptables
     sudo $f_iptables 
     echo "$ip" >> "$ips_bloqueadas"
 
-    # Bloquear IPs en el mismo rango (primeros 3 octetos)
+    # Bloqueo IPs en el mismo rango (comparando lo primeros 3 octetos) 
     rango_ip=$(echo "$ip" | cut -d '.' -f 1-3)
     if [ -z "$rango_ip" ]
     then
         echo "Error: No se pudo calcular el rango de IPs."
         return
     fi
-    if [ "$rango_ip.0/24" != "192.168.0.0/24" ]
+    # Hago el siguiente if para que no se bloquee el propio servidor al probar a hacer el ataque desde kali
+    if [ "$rango_ip.0/24" != "192.168.0.0/24" ] 
     then
-        # Bloqueamos el rango de ips añadiendolo al final de nuestro fichero de ip tables y ejecutandolo.
+        # Bloqueo el rango de ips añadiendolo al final de nuestro fichero de ip tables y ejecutandolo.
         echo "Bloqueando rango de IPs: $rango_ip.0/24"
         echo "#Bloqueando el rango de ips: '$rango_ip.0/24'
         iptables -A INPUT -s '$rango_ip.0/24' -j DROP" >> $f_iptables
         sudo $f_iptables 
-        # Debido a un error mencionado en el apartado de errores de la memoria implemento el siguiente codigo
+        # Debido a un error mencionado en el apartado de errores de la memoria implemento el siguiente codigo para que si apache no tiene logs no de error
         if [ "$rango_ip.0/24" != ".0/24" ]
         then
         echo "$rango_ip.0/24" >> "$ips_bloqueadas"
@@ -71,11 +72,11 @@ bloquear_ip() {
     else
     echo "Como el rango de ips, es el $rango_ip.0/24 y engloba a este propio servidor, no sera bloqueado"
     fi
-    # Llamo a la funcion para enviar correo electrónico
+    # Llamo a la funcion para enviar correo electrónico para que me mande que bloqueo (si bloqueo algo)
     enviar_correo "$ip" "$rango_ip.0/24"
 }
 
-# Este es la función para detectar patrones maliciosos en los logs
+# Esta es la función para detectar patrones maliciosos en los logs
 detectar_patrones_maliciosos() {
     # Defino los patrones sospechosos que quiero buscar en los logs
     patrones_maliciosos=("sqlmap" "nikto" "nmap" "hydra")
@@ -85,18 +86,19 @@ detectar_patrones_maliciosos() {
     do
         echo "Buscando patrón: $patron"
 
-        # Extraigo las IPs que coinciden con el patrón en los logs
+        # Extraigo las IPs que coinciden con el patrón en los logs con grep y awk ya que me informe y es la mejor manera (mas sencilla)
         ips_sospechosas=$(grep -i "$patron" "$logs" | awk '{print $1}' | sort | uniq)
 
         # Recorro cada IP sospechosa
         for ip in $ips_sospechosas
         do
-            # Variable para verificar si la IP ya está bloqueada
+            # Esta ariable es para verificar si la IP ya está bloqueada
             ip_encontrada=0
 
-            # Recorro el archivo de IPs bloqueadas para ver si la IP ya está en la lista
+            # Luego recorro el archivo de IPs bloqueadas para ver si la IP ya está en la lista
             for ip_bloqueada in $(cat "$ips_bloqueadas")
             do
+                # Si se encuentra la ip en la lista, se para el bucle y pasa a la siguiente ip ( y no bloquea esta )
                 if [ "$ip" = "$ip_bloqueada" ]
                 then
                     ip_encontrada=1
@@ -104,7 +106,7 @@ detectar_patrones_maliciosos() {
                 fi
             done
 
-            # Si la IP no está bloqueada, la bloqueo
+            # Si la IP no está bloqueada, la bloqueo y la añado al fichero de ips bloqueadas para que no sea bloqueada mas veces
             if [ "$ip_encontrada" -eq 0 ]
             then
                 echo "IP sospechosa detectada: $ip (Patrón: $patron)"
@@ -116,11 +118,11 @@ detectar_patrones_maliciosos() {
     done
 }
 
-# Este es la función que uso para detectar IPs con muchas conexiones
+# Esta es la función que uso para detectar IPs con muchas conexiones
 detectar_conexiones_excesivas() {
     echo "Analizando conexiones excesivas..."
 
-    # Extraigo las IPs del log de Apache, cuento cuántas veces aparecen y las ordeno de mayor a menor
+    # Primero extraigo las IPs del log de Apache, cuento cuántas veces aparecen y las ordeno de mayor a menor ( es una manera rebuscada, pero una vez entendida, hace mas facil el proceso de extraer ips )
     ips=$(tr -d '\0' < "$logs" | awk '{print $1}' "$logs" | sort | uniq -c | sort -nr)
 
     # Recorro cada línea de la lista de IPs y sus conexiones
@@ -130,7 +132,7 @@ detectar_conexiones_excesivas() {
         contador_conexiones=$(echo "$ip_por_ip" | awk '{print $1}')
         ip=$(echo "$ip_por_ip" | awk '{print $2}')
 
-#Antes de hacer la comparacion de conexiones, reviso si es un valor nulo, (si no hay logs de apache), si es nulo, paro el script ya que no hay logs.
+# Antes de hacer la comparacion de conexiones, reviso si es un valor nulo, (si no hay logs de apache), si es nulo, paro el script ya que no hay logs.
 if [ "$contador_conexiones" == "" ]
 then
     echo "Error: No hay logs de apache, terminando el proceso de mitigacion ... "
