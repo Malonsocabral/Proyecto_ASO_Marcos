@@ -7,23 +7,24 @@ then
 else
     echo "Ejecutando como sudo!"
 fi
-# Permito la ip 192.168.0.1 que es el server para poder hacer comprobaciones con TIME ya que al bloquear un rango se me bloquea la ip del server.
+# Pongo la siguiente regla de ip tables para permitir la ip 192.168.0.1 (que es el server) para poder hacer comprobaciones con TIME, ya que al bloquear un rango se me bloquea la ip del server. ( este error ya esta explicado en la memoria )
 sudo iptables -I INPUT -s "192.168.0.1" -j ACCEPT
-# Defino el número máximo de conexiones antes de considerar una IP sospechosa
+
+# Comienzo definiendo el número máximo de conexiones antes de considerar una IP sospechosa ( esto se puede cambiar a gusto de como se quiera )
 conexiones=100
 
 # Este es el archivo de logs de Apache donde revisaré las conexiones
 logs="/var/log/apache2/access.log"
-# Este es el fichero que cree para las ip tables
+# Este es el fichero que cree para las ip tables (ya en el script de Ubuntu)
 f_iptables="/usr/bin/set_iptables.sh"
 
-# Este es el archivo donde guardo las IPs ya bloqueadas para evitar repetir bloqueos
+# Este es el archivo donde guardo las IPs ya bloqueadas para evitar repetir bloqueos innecesarios
 ips_bloqueadas="/var/log/ips_bloqueadas.log"
 
 # Creo el archivo de IPs bloqueadas si no existe
 touch "$ips_bloqueadas"
 
-# Esta es la función para enviar un correo electrónico a mi correo personal
+# Esta es la función para enviar un correo electrónico a mi correo personal ( que se puede configurar en el fichero .sh de 020-correo )
 enviar_correo() {
     correo_destinatario=$(grep "root=" /etc/ssmtp/ssmtp.conf | cut -d'=' -f2) # Aqui entro en el fichero de configuracion del email para sacar el correo
     ip=$1
@@ -92,7 +93,7 @@ detectar_patrones_maliciosos() {
         # Recorro cada IP sospechosa
         for ip in $ips_sospechosas
         do
-            # Esta ariable es para verificar si la IP ya está bloqueada
+            # Esta variable es para verificar si la IP sospechosa ya está bloqueada
             ip_encontrada=0
 
             # Luego recorro el archivo de IPs bloqueadas para ver si la IP ya está en la lista
@@ -142,7 +143,7 @@ fi
         if [ "$contador_conexiones" -gt "$conexiones" ]
         then
          
-            # Variable para verificar si la IP ya está bloqueada
+            # Esta es una variable para verificar si la IP ya está bloqueada ( es basicamente lo mismo que en la funcion anterior de deteccion de patrones )
             ip_encontrada=0
 
             # Recorro el archivo de IPs bloqueadas para ver si la IP ya está en la lista
@@ -155,7 +156,7 @@ fi
                 fi
             done
 
-            # Si la IP no está bloqueada, la bloqueo
+            # Si la IP no está bloqueada de anteriores veces, la bloqueo
             if [ "$ip_encontrada" -eq 0 ]
             then
                 echo "IP con conexiones excesivas detectada: $ip - Conexiones: $contador_conexiones"
@@ -171,22 +172,22 @@ fi
 detectar_patrones_maliciosos
 detectar_conexiones_excesivas
 
-# Obtengo la hora actual (solo los minutos) para asi cuando sea en punto, vaciar el fichero iptables y poner el que tiene mi script de Montage de Ubuntu, y tambien borrar las ip bloqueadas y rangos.
+# A continuacion paso a la segunda parte del script
+# Ya que btengo la hora actual (solo los minutos) para asi cuando sea en punto, vaciar el fichero iptables ( asi poner el que tiene mi script de Montage de Ubuntu ), tambien borrar las ip bloqueadas y rangos, y cambia los logs de apache haciendo una copia.
 minutos=$(date +%M)
 hora=$(date +%H)
+# Obtengo la fecha general para luego hacer la copia de los logs con esta misma fecha
 fecha_general=$(date +"%Y-%m-%d_%H-%M")
-logs_antiguos_apache2=/var/log/apache2/logs-eliminados-access.log.tar
 
-# Verificar si es la hora en punto (minutos == 00)
+# Luego verifico si es la hora en punto (minutos == 00)
+# Y si la hora es en punto entonces limpio las Iptables, cambio los logs de apache para que no se vuelvan a bloquear las mismas ips .
 if [ "$minutos" -eq "00" ]
 then
     echo "Son las $hora en PUNTO (.$minutos)"
     echo "Por lo tanto, procedemos a borrar las iptables de las ips y rangos añadidos"
-    echo "Ademas borramos los logs de apache, cambiandolos a un fichero nuevo llamado '$logs_antiguos_apache2' "
-    echo "" > "$f_iptables"  # Esto vacía el fichero de ip tables
-
-    # Y a continuacion volvemos a poner el fichero inicial de ip tables 
-
+    echo "Ademas borramos los logs de apache, cambiandolos a un fichero nuevo llamado '$logs-eliminados-bckp.tar.gz' "
+    
+    # A continuacion volvemos a poner el fichero inicial de ip tables 
     sudo echo "#!/bin/bash
 
 # Limpio todas las reglas de iptables y las de la tabla NAT
@@ -200,26 +201,30 @@ iptables -t nat -A POSTROUTING -o enp0s3 -s 192.168.0.0/24 -j MASQUERADE
 iptables -A FORWARD -i enp0s8 -o enp0s3 -s 192.168.0.0/24 -j ACCEPT
 
 # Permito que el tráfico ya establecido o relacionado vuelva de enp0s3 a enp0s8
-iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -j ACCEPT" > /usr/bin/set_iptables.sh
+iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -j ACCEPT
 
-    sudo /usr/bin/set_iptables.sh #Ejecuto estas reglas que acabo de crear
+# Pongo esta regla para que el servidor pueda hacer TIME, ya que si no pongo esta regla, al hacer pruebas, el script de mitigacion, bloquea el rango del servidor
+sudo iptables -I INPUT -s 192.168.0.1 -j ACCEPT" > /usr/bin/set_iptables.sh # Podria poner "sudo $f_iptables" pero preferi poner la ruta absuluta ya que para realizar pruebas necesitaba memorizar esta ruta
+
+    # Ejecuto estas reglas que acabo de crear.
+    sudo /usr/bin/set_iptables.sh # Podria poner "sudo $f_iptables" pero preferi poner la ruta absuluta ya que para realizar pruebas necesitaba memorizar esta ruta
+      
+# logs="/var/log/apache2/access.log". Esta linea es para recordar la ruta a la hora de realizar pruebas.
     
-    # logs="/var/log/apache2/access.log" Esta linea es para recordar la ruta
-    
-    # A continuacion vacio tambien los logs de apache cambiandolos a un comprimido.
+    # A continuacion vacio tambien los logs de apache cambiandolos a un comprimido como ya eh explicado anteriormente.
     sudo mv $logs "$logs-eliminados-$fecha_general" && touch $logs && sudo chmod 644 $logs && sudo chown www-data:www-data $logs
     tar -rf "$logs-eliminados-bckp.tar.gz" "$logs-eliminados-$fecha_general"
     sudo rm "$logs-eliminados-$fecha_general"
     echo "Se han añadido los logs al backup correctamente"
     
-    # Obtener el tamaño del archivo comprimido en bytes
-    tamano=$(stat -c%s "$DIR_RESPALDO/$ARCHIVO_COMPRESO")
+    # Luego obtengo el tamaño del archivo comprimido en bytes
+    tamano=$(stat -c%s "$logs-eliminados-bckp.tar.gz")
 
-    # Si el tamaño es mayor o igual a 1GB (1073741824 bytes), eliminarlo
+    # Si el tamaño es mayor o igual a 1GB (1073741824 bytes), elimino el comprimido para ahorrar espacio.
     if [ "$tamano" -ge 1073741824 ]
     then
         echo "El archivo comprimido '$logs-eliminados-bckp.tar.gz' ha superado 1GB."
-        echo "Eliminándolo..."
+        echo "Eliminándolo..." 
         rm "$logs-eliminados-bckp.tar.gz"
     fi
 
@@ -228,6 +233,7 @@ iptables -A FORWARD -i enp0s3 -o enp0s8 -m state --state RELATED,ESTABLISHED -j 
     echo
 else
     echo
+    # En caso de que no sea la hora en punto, acaba el script con el siguiente mensaje.
     echo "Aun no es la hora en punto, por lo que no se vaciaran ni los logs de apache ni las iptables."
 fi
 echo
